@@ -29,7 +29,7 @@ pipeline.get('/', function(req, res, next){
   var findingActivities = models.Activity.findAll();
 
   Promise.all([findingHotels, findingRestaurants, findingActivities])
-    .then(function(hotels, restaurants, activities){
+    .spread(function(hotels, restaurants, activities){
       res.render('index', {
         templateHotels: hotels,
         templateRestaurants: restaurants,
