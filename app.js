@@ -1,52 +1,54 @@
 const express = require('express');
 const pipeline = express();
-const bodyparser = require('body-parser');
+const bodyParser = require('body-parser');
 const nunjucks = require('nunjucks');
 const morgan = require('morgan');
 const models = require('./models')
 const routes = require('./routes');
+const Promise = require('bluebird');
 const db = models.db;
 
-pipeline.use(bodyParser.urlencoded({ extended: false });
+pipeline.use(bodyParser.urlencoded({ extended: false }));
 pipeline.use(bodyParser.json());
 
-pipeline.engine('html',nunjucks.render);
 pipeline.set('view engine','html');
+pipeline.engine('html',nunjucks.render);
 nunjucks.configure('views',{noCache:true});
 
-pipeline.use(morgan(‘dev’));
+pipeline.use(morgan('dev'));
 
 pipeline.use(express.static(__dirname + "/node_modules"));
 pipeline.use(express.static(__dirname + '/public'));
 
 
-pipeline.use('/', routes)
-
-// catch 404 (i.e., no route was hit) and forward to error handler
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
-});
-
-app.get('/', function(req, res, next){
-  var findingHotels = models.db.Hotel.findAll();
-  var findingRestaurants = models.db.Restaurant.findAll();
-  var findingActivities = models.db.Activities.findAll();
+//pipeline.use('/', routes)
+pipeline.get('/', function(req, res, next){
+  //console.dir(hotel);
+  var findingHotels = models.Hotel.findAll();
+  var findingRestaurants = models.Restaurant.findAll();
+  var findingActivities = models.Activity.findAll();
 
   Promise.all([findingHotels, findingRestaurants, findingActivities])
-    .spread(function(hotels, restaurants, activities){
-      res.render('index.html', {
+    .then(function(hotels, restaurants, activities){
+      res.render('index', {
         templateHotels: hotels,
         templateRestaurants: restaurants,
         templateActivities: activities
       });
     })
-      .catch(next);
+    .catch(next);
 });
 
+// catch 404 (i.e., no route was hit) and forward to error handler
+pipeline.use(function(req, res, next) {
+  var err = new Error('Not Found');
+  err.status = 404;
+  next(err);
+});
+
+
 // handle all errors (anything passed into `next()`)
-app.use(function(err, req, res, next) {
+pipeline.use(function(err, req, res, next) {
   res.status(err.status || 500);
   console.error(err);
   res.render(
