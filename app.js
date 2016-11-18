@@ -5,6 +5,7 @@ const nunjucks = require('nunjucks');
 const morgan = require('morgan');
 const models = require('./models')
 const routes = require('./routes');
+const db = models.db;
 
 pipeline.use(bodyParser.urlencoded({ extended: false });
 pipeline.use(bodyParser.json());
@@ -28,6 +29,22 @@ app.use(function(req, res, next) {
   next(err);
 });
 
+app.get('/', function(req, res, next){
+  var findingHotels = models.db.Hotel.findAll();
+  var findingRestaurants = models.db.Restaurant.findAll();
+  var findingActivities = models.db.Activities.findAll();
+
+  Promise.all([findingHotels, findingRestaurants, findingActivities])
+    .spread(function(hotels, restaurants, activities){
+      res.render('index.html', {
+        templateHotels: hotels,
+        templateRestaurants: restaurants,
+        templateActivities: activities
+      });
+    })
+      .catch(next);
+});
+
 // handle all errors (anything passed into `next()`)
 app.use(function(err, req, res, next) {
   res.status(err.status || 500);
@@ -37,8 +54,12 @@ app.use(function(err, req, res, next) {
   );
 });
 
+db.sync()
+  .then(function(){
+    pipeline.listen(3000, function(err){
+      if(err) return console.error(err);
+      console.log('Server is listening on port 3000');
+    });
+  })
+  .catch(console.err);
 
-pipeline.listen(3000, function(err){
-	if(err) return console.error(err);
-	console.log('Server is listening on port 3000');
-})
